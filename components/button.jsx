@@ -1,12 +1,13 @@
+// src/components/Button.jsx
+
 import React from 'react';
 import PropTypes from 'prop-types';
 
-const Button = ({ children, onClick, type = 'button', className = '' }) => {
+const Button = ({ className, children, ...props }) => {
   return (
     <button
-      type={type}
-      onClick={onClick}
-      className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 focus:outline-none ${className}`}
+      className={`px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors ${className}`}
+      {...props}
     >
       {children}
     </button>
@@ -14,10 +15,12 @@ const Button = ({ children, onClick, type = 'button', className = '' }) => {
 };
 
 Button.propTypes = {
-  children: PropTypes.node.isRequired,
-  onClick: PropTypes.func,
-  type: PropTypes.oneOf(['button', 'submit', 'reset']),
   className: PropTypes.string,
+  children: PropTypes.node.isRequired,
+};
+
+Button.defaultProps = {
+  className: '',
 };
 
 export default Button;

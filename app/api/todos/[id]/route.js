@@ -1,40 +1,57 @@
-// app/api/todos/[id]/route.js
+// src/app/api/todos/[id]/route.js
 
-import { todos } from '../data';
+import { NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
 
 export async function PUT(request, { params }) {
   const { id } = params;
-  const todoIndex = todos.findIndex((t) => t.id === parseInt(id, 10));
-  if (todoIndex === -1) {
-    return new Response(JSON.stringify({ error: 'Todo not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+
   try {
-    const updatedData = await request.json();
-    todos[todoIndex] = { ...todos[todoIndex], ...updatedData };
-    return new Response(JSON.stringify(todos[todoIndex]), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
+    const { completed } = await request.json();
+
+    if (typeof completed !== 'boolean') {
+      return NextResponse.json({ error: 'Invalid completed status' }, { status: 400 });
+    }
+
+    const existingTodo = await prisma.todo.findUnique({
+      where: { id: parseInt(id, 10) },
     });
+
+    if (!existingTodo) {
+      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
+    }
+
+    const updatedTodo = await prisma.todo.update({
+      where: { id: parseInt(id, 10) },
+      data: { completed },
+    });
+
+    return NextResponse.json(updatedTodo, { status: 200 });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Invalid data' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    console.error(`PUT /api/todos/${id} error:`, error);
+    return NextResponse.json({ error: 'Failed to update todo' }, { status: 500 });
   }
 }
 
 export async function DELETE(request, { params }) {
   const { id } = params;
-  const todoIndex = todos.findIndex((t) => t.id === parseInt(id, 10));
-  if (todoIndex === -1) {
-    return new Response(JSON.stringify({ error: 'Todo not found' }), {
-      status: 404,
-      headers: { 'Content-Type': 'application/json' },
+
+  try {
+    const existingTodo = await prisma.todo.findUnique({
+      where: { id: parseInt(id, 10) },
     });
+
+    if (!existingTodo) {
+      return NextResponse.json({ error: 'Todo not found' }, { status: 404 });
+    }
+
+    await prisma.todo.delete({
+      where: { id: parseInt(id, 10) },
+    });
+
+    return NextResponse.json({ message: 'Todo deleted successfully' }, { status: 200 });
+  } catch (error) {
+    console.error(`DELETE /api/todos/${id} error:`, error);
+    return NextResponse.json({ error: 'Failed to delete todo' }, { status: 500 });
   }
-  todos.splice(todoIndex, 1);
-  return new Response(null, { status: 204 });
 }
